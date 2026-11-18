@@ -138,12 +138,27 @@ make classify-testzip  # informe de referencia out/informe-e2e-50.json
 - Referencia actual: 25 conservadas / 25 eliminadas, 0 errores.
 - Generador: `scripts/make_test_zip.py`.
 
-## Docker (desarrollo)
+## Docker
 ```bash
-docker compose up --build       # http://127.0.0.1:8080
+docker network create traefik-net     # una sola vez en local (red compartida con Traefik)
+docker compose up -d --build          # http://127.0.0.1:8080
 docker compose --profile tools run --rm classify -in dataset -provider mock -min-recall 0
 ```
-Los trabajos se guardan en el directorio temporal del contenedor y se borran al parar; no hay volumen de persistencia.
+- `Dockerfile`: imagen de producción (multi-stage, binario estático, usuario sin privilegios).
+- `Dockerfile.dev`: solo para el perfil `tools` (compila y ejecuta con `go run`).
+- El compose publica el puerto únicamente en `127.0.0.1` y declara las labels de Traefik; el servicio escucha en `:8080` dentro del contenedor.
+- Los trabajos viven en el directorio temporal del contenedor; se borran al parar. No hay volumen de persistencia.
+
+## Despliegue (VPS)
+```bash
+ssh vps-hostinger
+cd /root/projects/phot-clean
+git pull
+docker compose up -d --build
+```
+- Dominio: `photo-clean.nestorpons.com` (Traefik + `myresolver`, red `traefik-net`).
+- `.env` del servidor: `OPENAI_API_KEY`, `APP_PORT=8091`, `ROUTER=photo-clean`, `DOMAIN=photo-clean.nestorpons.com`.
+- DNS: registro `A` de `photo-clean` → `93.127.203.142` en Hostinger.
 
 ## Proveedores
 | Proveedor | API | Uso |

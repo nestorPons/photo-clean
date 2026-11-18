@@ -4,28 +4,34 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
       - .env
     environment:
       APP_ADDR: ":8080"
     ports:
+      # Solo acceso local (pruebas/túnel SSH). El tráfico público entra por Traefik.
       - "127.0.0.1:${APP_PORT:-8080}:8080"
-    volumes:
-      - .:/app
-      - go-mod-cache:/go/pkg/mod
-      - go-build-cache:/root/.cache/go-build
-    working_dir: /app
-    command: ["go", "run", "./cmd/photo-clean"]
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/healthz"]
-      interval: 20s
+      interval: 30s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 3
+      start_period: 20s
+    networks:
+      - default
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-net"
+      - "traefik.http.routers.${ROUTER:-photo-clean}.rule=Host(`${DOMAIN:-photo-clean.nestorpons.com}`)"
+      - "traefik.http.routers.${ROUTER:-photo-clean}.entrypoints=web,websecure"
+      - "traefik.http.routers.${ROUTER:-photo-clean}.tls=true"
+      - "traefik.http.routers.${ROUTER:-photo-clean}.tls.certresolver=myresolver"
+      - "traefik.http.services.${ROUTER:-photo-clean}.loadbalancer.server.port=8080"
 
-  # Perfil de herramientas: test del clasificador dentro del contenedor.
+  # Herramientas: test del clasificador dentro del contenedor.
   # docker compose --profile tools run --rm classify -in dataset -provider decisions
   classify:
     profiles: ["tools"]
@@ -40,10 +46,15 @@ services:
       GOCACHE: /tmp/go-cache
     volumes:
       - .:/app
+      - go-mod-cache:/go/pkg/mod
     working_dir: /app
     entrypoint: ["go", "run", "./cmd/classify"]
     command: ["-in", "dataset", "-provider", "decisions", "-out", "out/informe.json"]
 
 volumes:
   go-mod-cache:
-  go-build-cache:
+
+networks:
+  # Red compartida con Traefik. En local: docker network create traefik-net
+  traefik-net:
+    external: true
