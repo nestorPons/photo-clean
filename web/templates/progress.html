@@ -1,0 +1,45 @@
+<section id="job" class="panel" aria-busy="true"
+        hx-get="/jobs/{{.Job.ID}}/progress" hx-trigger="every 1s" hx-swap="outerHTML">
+  <div class="panel-head">
+    <span class="badge badge-busy">
+      <span class="spinner" aria-hidden="true"></span>
+      {{.Job.StatusText}}
+    </span>
+    {{if gt .Job.Total 0}}
+      <span class="muted">{{.Job.Done}} de {{.Job.Total}} imágenes</span>
+    {{else}}
+      <span class="muted">Preparando…</span>
+    {{end}}
+  </div>
+
+  {{if gt .Job.Total 0}}
+    <progress class="bar" max="100" value="{{.Job.Percent}}">{{.Job.Percent}}%</progress>
+  {{else}}
+    <div class="bar bar-wait" role="progressbar" aria-label="Leyendo el ZIP"></div>
+  {{end}}
+
+  <p class="working">
+    {{if eq .Job.Status "queued"}}
+      ZIP recibido y en cola. Empezamos en cuanto haya un hueco libre.
+    {{else if eq .Job.Status "reading"}}
+      ZIP recibido. Estamos leyendo las imágenes, puede tardar unos segundos.
+    {{else}}
+      Clasificando las imágenes con IA. La página se actualiza sola cada segundo.
+    {{end}}
+  </p>
+
+  <div class="counters">
+    <div class="counter ok">
+      <span>Conservadas</span>
+      <strong>{{.Job.Accepted}}</strong>
+    </div>
+    <div class="counter no">
+      <span>Eliminadas</span>
+      <strong>{{.Job.Rejected}}</strong>
+    </div>
+  </div>
+
+  {{if gt .Job.Failed 0}}
+    <p class="note">{{.Job.Failed}} imágenes no se pudieron clasificar y se omitirán.</p>
+  {{end}}
+</section>

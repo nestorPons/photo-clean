@@ -1,0 +1,18 @@
+# Entorno local con recarga manual (go run).
+FROM golang:1.27-alpine
+
+RUN apk add --no-cache ca-certificates tzdata wget git
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# Calienta la caché de compilación para que el primer `go run` no tarde ~1 min.
+RUN go build ./...
+
+EXPOSE 8080
+
+CMD ["go", "run", "./cmd/photo-clean"]

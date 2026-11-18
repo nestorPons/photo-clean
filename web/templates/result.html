@@ -1,0 +1,52 @@
+<section id="job" class="panel result">
+  <div class="panel-head">
+    <span class="badge badge-done">Listo</span>
+    <span class="muted">{{.Job.Total}} imágenes procesadas</span>
+  </div>
+
+  <div class="counters">
+    <div class="counter ok">
+      <span>Conservadas</span>
+      <strong>{{.Job.Accepted}}</strong>
+    </div>
+    <div class="counter no">
+      <span>Eliminadas</span>
+      <strong>{{.Job.Rejected}}</strong>
+    </div>
+  </div>
+
+  {{if gt .Job.Failed 0}}
+    <p class="note">{{.Job.Failed}} imágenes no se pudieron clasificar y se omitieron.</p>
+  {{end}}
+
+  <div class="actions">
+    <a class="btn" href="/jobs/{{.Job.ID}}/aceptadas.zip" download>Descargar conservadas</a>
+    <a class="btn btn-ghost" href="/jobs/{{.Job.ID}}/descartadas.zip" download>Descargar eliminadas</a>
+  </div>
+
+  <details class="list">
+    <summary>Ver conservadas ({{.Job.Accepted}})</summary>
+    {{if .Job.AcceptedNames}}
+      <ul>
+        {{range .Job.AcceptedNames}}<li>{{.}}</li>{{end}}
+      </ul>
+      {{if gt .Job.AcceptedMore 0}}<p class="muted small">y {{.Job.AcceptedMore}} más…</p>{{end}}
+    {{else}}
+      <p class="muted small">No se conservó ninguna imagen.</p>
+    {{end}}
+  </details>
+
+  <details class="list">
+    <summary>Ver eliminadas ({{.Job.Rejected}})</summary>
+    {{if .Job.RejectedNames}}
+      <ul>
+        {{range .Job.RejectedNames}}<li>{{.}}</li>{{end}}
+      </ul>
+      {{if gt .Job.RejectedMore 0}}<p class="muted small">y {{.Job.RejectedMore}} más…</p>{{end}}
+    {{else}}
+      <p class="muted small">No se eliminó ninguna imagen.</p>
+    {{end}}
+  </details>
+
+  <p class="again"><a class="link" href="/">Procesar otro ZIP</a></p>
+</section>

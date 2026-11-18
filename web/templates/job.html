@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>photo-clean · trabajo {{.Job.ID}}</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/vendor/htmx.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+  {{if not .Job.Finished}}<noscript><meta http-equiv="refresh" content="2"></noscript>{{end}}
+</head>
+<body>
+  <main class="shell">
+    <header class="hero hero-small">
+      <a class="pill pill-link" href="/">Volver</a>
+      <h1>Limpiando fotos</h1>
+      <p>Puedes cerrar esta pestaña: el ZIP se procesa en el servidor.</p>
+    </header>
+
+    <div id="job-panel" aria-live="polite">
+      {{if eq .Job.Status "failed"}}
+        {{template "error.html" .}}
+      {{else if .Job.Finished}}
+        {{template "result.html" .}}
+      {{else}}
+        {{template "progress.html" .}}
+      {{end}}
+    </div>
+
+    <footer class="foot">
+      <p>Los ZIP se borran automáticamente. No se guarda ninguna copia permanente.</p>
+    </footer>
+  </main>
+</body>
+</html>

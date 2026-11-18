@@ -1,0 +1,19 @@
+.env
+
+# Salidas de test y ZIP procesados
+/out/
+/tmp/
+*.zip
+
+# Dataset (imágenes pesadas, no se versionan)
+dataset/motivo/*
+dataset/paisaje/*
+dataset/manifest.tsv
+!dataset/**/.gitkeep
+
+# Binarios
+/bin/
+
+# Python (scripts de dataset)
+__pycache__/
+*.pyc

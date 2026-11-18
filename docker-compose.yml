@@ -1,0 +1,49 @@
+name: photo-clean
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ADDR: ":8080"
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    volumes:
+      - .:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    working_dir: /app
+    command: ["go", "run", "./cmd/photo-clean"]
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/healthz"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Perfil de herramientas: test del clasificador dentro del contenedor.
+  # docker compose --profile tools run --rm classify -in dataset -provider decisions
+  classify:
+    profiles: ["tools"]
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file:
+      - .env
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      HOME: /tmp
+      GOCACHE: /tmp/go-cache
+    volumes:
+      - .:/app
+    working_dir: /app
+    entrypoint: ["go", "run", "./cmd/classify"]
+    command: ["-in", "dataset", "-provider", "decisions", "-out", "out/informe.json"]
+
+volumes:
+  go-mod-cache:
+  go-build-cache:

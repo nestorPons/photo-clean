@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>photo-clean · limpia tus fotos</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/vendor/htmx.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <span class="pill">V2 · limpieza de fotos</span>
+      <h1>photo-clean</h1>
+      <p>Sube un ZIP y quédate solo con las fotos que tienen personas o animales.</p>
+    </header>
+
+    <form id="upload" class="upload"
+          action="/jobs" method="post" enctype="multipart/form-data"
+          hx-post="/jobs" hx-target="#job-panel" hx-swap="innerHTML"
+          hx-encoding="multipart/form-data" hx-indicator="#upload-status"
+          hx-disabled-elt="#submit">
+      <label id="dropzone" class="dropzone" for="zip">
+        <input id="zip" class="file" type="file" name="zip"
+               accept=".zip,application/zip,application/x-zip-compressed" required>
+        <svg class="drop-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 16V4m0 0L8 8m4-4 4 4"></path>
+          <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path>
+        </svg>
+        <strong>Arrastra tu ZIP aquí</strong>
+        <span>o haz clic para elegirlo</span>
+        <small id="file-name">Hasta {{.MaxUploadMB}} MB · {{.MaxFiles}} imágenes · jpg, jpeg, png, webp</small>
+      </label>
+
+      <div class="form-actions">
+        <button id="submit" class="btn" type="submit">Limpiar fotos</button>
+      </div>
+
+      <p id="upload-status" class="upload-status htmx-indicator" role="status" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="upload-status-text">Subiendo ZIP…</span>
+      </p>
+    </form>
+
+    {{if .Error}}<p class="alert" role="alert">{{.Error}}</p>{{end}}
+
+    <div id="job-panel" aria-live="polite"></div>
+
+    <footer class="foot">
+      <p>Las imágenes se clasifican con OpenAI Decisions y se descartan las que no tienen personas ni animales.</p>
+      <p>Los ZIP se borran automáticamente. No se guarda ninguna copia permanente.</p>
+    </footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,112 @@
+# photo-clean — configuración de la aplicación.
+# Las claves API NO van aquí: se leen del entorno (.env).
+# Sobrescritura: variables de entorno > este archivo > valores por defecto.
+
+app:
+  addr: ":8080"
+  environment: development
+
+paths:
+  dataset: dataset
+  out: out
+  jobs: ""                 # vacío = directorio temporal del sistema
+  report: out/informe.json
+  accepted_zip: out/aceptadas.zip
+  rejected_zip: out/descartadas.zip
+
+classify:
+  provider: decisions     # decisions | openai | chain | mock
+  threshold: 0.5          # probabilidad mínima para conservar
+  concurrency: 4          # imágenes en paralelo
+  timeout: 60s            # timeout por imagen
+  min_recall: 0.95        # recall mínimo para superar el test
+  chain_max_failures: 3   # fallos seguidos antes de desactivar un proveedor
+
+decisions:                # OpenAI Decisions API (prioritario)
+  base_url: https://api.openai.com/v1
+  endpoint: /decisions
+  model: gpt-6-luna
+  timeout: 60s
+  retries: 3
+  max_image_side: 1536
+  image_quality: 85
+
+openai:                   # OpenAI Chat Completions con visión (fallback)
+  base_url: https://api.openai.com/v1
+  endpoint: /chat/completions
+  model: gpt-4o-mini
+  timeout: 90s
+  retries: 3
+  max_image_side: 1536
+  image_quality: 82
+  image_detail: auto      # low | high | auto
+  max_tokens: 120
+
+http:
+  user_agent: photo-clean/0.1
+  max_response_bytes: 8388608
+
+zip:
+  max_file_bytes: 26214400       # 25 MiB por imagen
+  max_files: 5000
+  max_total_bytes: 1073741824    # 1 GiB descomprimido por ZIP
+
+web:
+  max_upload_bytes: 314572800    # 300 MiB por ZIP subido
+  max_jobs: 2                    # trabajos procesándose a la vez
+  job_ttl: 1h                    # vida de los ZIP temporales
+
+prompts:
+  system: >
+    You classify photos. Answer only with JSON, never with prose.
+  decisions_context: >
+    Inspect this photo and answer the questions about what it contains.
+    Look at the whole frame, including the background and any depicted subjects.
+  decisions_has_subject: |
+    Does the photo contain a person or an animal?
+
+    Answer yes if you can see a real person or animal anywhere in the photo, even if it is small, distant, blurred,
+    partially hidden by objects, or in the background. A recognizable face or full head is enough for a person, and a
+    whole animal or a recognizable head is enough for an animal.
+
+    Also answer yes for a depicted person or animal only when the depiction is the main subject of the photo:
+    a portrait painting, a realistic figurine, model or statue of a person or animal, a person wearing a costume,
+    or a printed photograph shown inside the photo.
+
+    Answer no when:
+    - only a hand, arm, leg, foot, neck, chin or torso is visible, or the person is cut off by the frame or hidden
+      behind a counter or display so that no face or full head is visible; a person whose head is cut off by the top
+      edge so that only the mouth, chin, neck or torso is visible (for example, a worker behind a counter) does not count;
+    - the subjects are stuffed animals, plush toys, teddy bears, dolls or mannequins;
+    - the only people or animals appear on a TV, monitor, phone or projector screen;
+    - the depiction is only decorative (statues or figures on a clock, building or monument) and not the main subject;
+    - a hand or arm holding a glass, cutlery or napkin at the edge of a close-up of food;
+    - a figure that is part of a model vehicle, toy or diorama (for example, a pilot figure inside a model airplane).
+
+    If the photo is mainly a close-up of food or an object and only a hand or arm enters the frame, answer no.
+  decisions_subject: Which subject is present in the photo?
+  decisions_subject_person: >
+    A real person is visible anywhere (even small or in the background), or a depicted person is the main subject.
+  decisions_subject_animal: >
+    A real animal is visible anywhere (even small or in the background), or a realistic figurine, model or statue of an animal is the main subject, and no person is.
+  decisions_subject_both: >
+    Both a person and an animal are visible or depicted as main subjects.
+  decisions_subject_none: >
+    No real person or animal is visible anywhere; only body parts, stuffed animals, screens, or decorative depictions.
+  openai: |
+    You are an image triage assistant.
+    Decide if the photo contains a person or an animal.
+    Answer yes if a real person or animal is visible anywhere in the photo, even if small, distant, blurred, partially
+    hidden or in the background; a recognizable face or full head is enough for a person, and a whole animal or a
+    recognizable head is enough for an animal.
+    Also count a depicted person or animal only when it is the main subject: a portrait painting, a realistic figurine,
+    model or statue of a person or animal, a person in costume, or a printed photograph shown inside the photo.
+    Answer no when only a hand, arm, leg, foot, neck, chin or torso is visible; when the person is cut off by the frame
+    or hidden behind a counter or display without a face or full head (for example, a head cut off at the top edge so
+    only the mouth, chin or neck is visible); for stuffed animals, plush toys, teddy bears, dolls or mannequins; for
+    people or animals that appear only on a TV, monitor or phone screen; decorative statues or figures on a clock,
+    building or monument; a hand or arm holding a glass, cutlery or napkin at the edge of a close-up of food; or a
+    figure that is part of a model vehicle, toy or diorama (for example, a pilot figure inside a model airplane).
+    If the photo is mainly a close-up of food or an object and only a hand or arm enters the frame, answer no.
+    Return ONLY valid JSON with this shape:
+    {"has_subject": true|false, "labels": ["person"|"animal"], "confidence": 0.0-1.0}
